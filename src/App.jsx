@@ -18,6 +18,12 @@ export default function App() {
   const [activeCue, setActiveCue] = useState(null);
   const [scteHistory, setScteHistory] = useState([]);
   const [dbConfig, setDbConfig] = useState(() => googleSheetsDB.getConfig());
+  const [roomCode, setRoomCode] = useState(() => scte35Engine.roomCode);
+
+  const handleRoomCodeChange = (newCode) => {
+    setRoomCode(newCode);
+    scte35Engine.setRoomCode(newCode);
+  };
 
   // Synchronize currentChannel whenever channels list updates
   useEffect(() => {
@@ -82,6 +88,8 @@ export default function App() {
           dbConfig={dbConfig}
           theme={theme}
           setTheme={setTheme}
+          roomCode={roomCode}
+          onRoomCodeChange={handleRoomCodeChange}
         />
 
         {/* Distinct URL Page Routes */}

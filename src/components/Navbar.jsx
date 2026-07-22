@@ -15,7 +15,9 @@ export default function Navbar({
   activeCue,
   dbConfig,
   theme,
-  setTheme
+  setTheme,
+  roomCode,
+  onRoomCodeChange
 }) {
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
@@ -64,6 +66,19 @@ export default function Navbar({
                 <span>STREAM LIVE</span>
               </div>
             )}
+
+            {/* Global Sync Room Code Input */}
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 px-2.5 py-1.5 rounded-xl">
+              <Radio className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+              <input
+                type="text"
+                value={roomCode || ''}
+                onChange={(e) => onRoomCodeChange(e.target.value)}
+                placeholder="Sync Room"
+                className="w-20 bg-transparent text-[11px] font-mono font-bold text-amber-500 focus:outline-none dark:text-amber-400 text-amber-600"
+                title="Global Sync Room Code (Match this code on all devices to sync SCTE breaks)"
+              />
+            </div>
 
             {/* Light / Dark Mode Theme Toggle */}
             <button

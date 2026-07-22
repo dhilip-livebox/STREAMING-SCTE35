@@ -261,6 +261,12 @@ export default function AdminDashboard({
             </label>
           </div>
 
+          {selectedAdFileName && selectedAdUrl === 'indexeddb://ad_media_file' && (
+            <p className="text-[10px] text-amber-500 font-medium">
+              ⚠️ Note: Local files can only play in the same browser/computer. To sync ads on separate devices (like phones or smart TVs), select a preset commercial or paste a network URL.
+            </p>
+          )}
+
           {/* Preset Sample Commercials Quick Pills */}
           <div className="flex items-center gap-2 flex-wrap pt-1">
             <span className="text-[11px] text-slate-400 font-mono">Or Pick Sample Commercial:</span>

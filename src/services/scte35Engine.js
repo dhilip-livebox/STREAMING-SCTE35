@@ -12,6 +12,8 @@ class SCTE35Engine {
     this.autoSchedulerTimer = null;
     this.autoIntervalMinutes = 3;
     this.autoSchedulerActive = false;
+    this.roomCode = (typeof window !== 'undefined' && localStorage.getItem('scte35_sync_room')) || 'livebox-scte35';
+    this.eventSource = null;
 
     // Cross-tab broadcast synchronization channel
     if (typeof window !== 'undefined' && window.BroadcastChannel) {
@@ -26,6 +28,58 @@ class SCTE35Engine {
           this.notify(payload);
         }
       };
+    }
+
+    this.connectGlobalSync();
+  }
+
+  setRoomCode(code) {
+    this.roomCode = code || 'livebox-scte35';
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('scte35_sync_room', this.roomCode);
+    }
+    this.connectGlobalSync();
+  }
+
+  connectGlobalSync() {
+    if (typeof window === 'undefined') return;
+
+    if (this.eventSource) {
+      this.eventSource.close();
+    }
+
+    const sseUrl = `https://ntfy.sh/scte35_room_${this.roomCode}/sse`;
+    this.eventSource = new EventSource(sseUrl);
+
+    this.eventSource.onmessage = (event) => {
+      try {
+        const rawData = JSON.parse(event.data);
+        if (rawData.message) {
+          const syncEvent = JSON.parse(rawData.message);
+          if (syncEvent.type === 'CUE_OUT') {
+            this.activeCue = syncEvent;
+            this.notify(syncEvent);
+          } else if (syncEvent.type === 'CUE_IN') {
+            this.activeCue = null;
+            this.notify(syncEvent);
+          }
+        }
+      } catch (e) {
+        // Ignore system notifications
+      }
+    };
+  }
+
+  async publishGlobalSync(event) {
+    try {
+      // Remove raw binary files from global sync payload to respect size limits
+      const syncPayload = { ...event, adFile: null };
+      await fetch(`https://ntfy.sh/scte35_room_${this.roomCode}`, {
+        method: 'POST',
+        body: JSON.stringify(syncPayload)
+      });
+    } catch (e) {
+      console.warn("Global real-time sync publish failed:", e);
     }
   }
 
@@ -129,6 +183,7 @@ class SCTE35Engine {
     if (this.syncChannel) {
       this.syncChannel.postMessage({ action: 'CUE_OUT', payload: event });
     }
+    this.publishGlobalSync(event);
 
     return event;
   }
@@ -160,6 +215,7 @@ class SCTE35Engine {
     if (this.syncChannel) {
       this.syncChannel.postMessage({ action: 'CUE_IN', payload: event });
     }
+    this.publishGlobalSync(event);
 
     return event;
   }
