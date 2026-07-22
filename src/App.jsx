@@ -73,6 +73,15 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Subscribe to Global SCTE-35 Channel Updates (syncs streams/channels across devices)
+  useEffect(() => {
+    const unsubscribe = scte35Engine.subscribeChannel((event) => {
+      if (event.channels) setChannels(event.channels);
+      if (event.currentChannel) setCurrentChannel(event.currentChannel);
+    });
+    return () => unsubscribe();
+  }, []);
+
   // Manual Cue Trigger Callback
   const handleManualCueTrigger = (durationSec = 30, adUrl = null, adMediaType = 'video', adFile = null) => {
     scte35Engine.triggerCueOut(durationSec, adUrl, adMediaType, adFile, currentChannel.id);

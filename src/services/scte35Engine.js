@@ -7,6 +7,7 @@
 class SCTE35Engine {
   constructor() {
     this.listeners = new Set();
+    this.channelListeners = new Set();
     this.history = [];
     this.activeCue = null;
     this.autoSchedulerTimer = null;
@@ -64,7 +65,15 @@ class SCTE35Engine {
             }
           }
 
-          if (!syncEvent || !syncEvent.id) return;
+          if (!syncEvent) return;
+
+          // Handle global channel/stream URL sync
+          if (syncEvent.type === 'CHANNEL_UPDATED') {
+            this.notifyChannelUpdate(syncEvent);
+            return;
+          }
+
+          if (!syncEvent.id) return;
 
           // Prevent loopback duplication if we triggered it locally
           if (this.activeCue && this.activeCue.id === syncEvent.id) {
@@ -102,6 +111,39 @@ class SCTE35Engine {
       });
     } catch (e) {
       console.warn("Global real-time sync publish failed:", e);
+    }
+  }
+
+  subscribeChannel(callback) {
+    this.channelListeners = this.channelListeners || new Set();
+    this.channelListeners.add(callback);
+    return () => this.channelListeners.delete(callback);
+  }
+
+  notifyChannelUpdate(event) {
+    this.channelListeners = this.channelListeners || new Set();
+    this.channelListeners.forEach(cb => cb(event));
+  }
+
+  async publishChannelUpdate(channels, currentChannel) {
+    try {
+      const payload = {
+        type: 'CHANNEL_UPDATED',
+        channels,
+        currentChannel: {
+          ...currentChannel,
+          // Strip local object URLs so other devices use standard defaults
+          url: currentChannel.url.startsWith('blob:') || currentChannel.url.startsWith('indexeddb:') 
+            ? 'indexeddb://main_stream_file' 
+            : currentChannel.url
+        }
+      };
+      await fetch(`https://ntfy.sh/scte35_room_${this.roomCode}`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {
+      console.warn("Global channel sync publish failed:", e);
     }
   }
 

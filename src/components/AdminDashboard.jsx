@@ -51,6 +51,7 @@ export default function AdminDashboard({
     const updated = googleSheetsDB.saveChannel(updatedObj);
     setChannels(updated);
     if (setCurrentChannel) setCurrentChannel(updatedObj);
+    scte35Engine.publishChannelUpdate(updated, updatedObj);
     setSaveSuccessMsg('Stream Video URL updated successfully!');
     setTimeout(() => setSaveSuccessMsg(''), 3000);
   };
@@ -76,6 +77,7 @@ export default function AdminDashboard({
     const updated = googleSheetsDB.saveChannel(updatedObj);
     setChannels(updated);
     if (setCurrentChannel) setCurrentChannel(updatedObj);
+    scte35Engine.publishChannelUpdate(updated, updatedObj);
 
     if (typeof window !== 'undefined' && window.BroadcastChannel) {
       const channelSync = new BroadcastChannel('stream_pulse_channel_sync');
