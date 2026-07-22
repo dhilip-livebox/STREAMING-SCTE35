@@ -55,13 +55,35 @@ class SCTE35Engine {
       try {
         const rawData = JSON.parse(event.data);
         if (rawData.message) {
-          const syncEvent = JSON.parse(rawData.message);
+          let syncEvent = rawData.message;
+          if (typeof syncEvent === 'string') {
+            try {
+              syncEvent = JSON.parse(syncEvent);
+            } catch (e) {
+              return;
+            }
+          }
+
+          if (!syncEvent || !syncEvent.id) return;
+
+          // Prevent loopback duplication if we triggered it locally
+          if (this.activeCue && this.activeCue.id === syncEvent.id) {
+            return;
+          }
+
           if (syncEvent.type === 'CUE_OUT') {
             this.activeCue = syncEvent;
             this.notify(syncEvent);
           } else if (syncEvent.type === 'CUE_IN') {
-            this.activeCue = null;
-            this.notify(syncEvent);
+            // Match with activeCue to prevent loopback cue-in resetting
+            if (this.activeCue && this.activeCue.eventId === syncEvent.eventId) {
+              this.activeCue = null;
+              this.notify(syncEvent);
+            } else if (this.activeCue) {
+              // If we are currently playing an ad, and get a cue_in, end it
+              this.activeCue = null;
+              this.notify(syncEvent);
+            }
           }
         }
       } catch (e) {
