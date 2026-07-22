@@ -150,16 +150,35 @@ export default function LivePlayer({
     };
   }, [channel?.url, broadcastStreamFile]);
 
-  // Handle Play/Pause state changes
+  // Handle Play/Pause state changes and switch video focus smoothly (resolves frame/audio glitches)
   useEffect(() => {
-    if (isAdPlaying && adVideoRef.current && !isImageAd) {
-      adVideoRef.current.playbackRate = 1.0;
-      if (isPlaying) adVideoRef.current.play().catch(() => {});
-      else adVideoRef.current.pause();
-    } else if (mainVideoRef.current) {
-      mainVideoRef.current.playbackRate = 1.0;
-      if (isPlaying) mainVideoRef.current.play().catch(() => {});
-      else mainVideoRef.current.pause();
+    const mainVid = mainVideoRef.current;
+    const adVid = adVideoRef.current;
+
+    if (isAdPlaying) {
+      if (mainVid && !mainVid.paused) {
+        mainVid.pause();
+      }
+      if (adVid && !isImageAd) {
+        adVid.playbackRate = 1.0;
+        if (isPlaying) {
+          adVid.play().catch(() => {});
+        } else {
+          adVid.pause();
+        }
+      }
+    } else {
+      if (adVid && !adVid.paused) {
+        adVid.pause();
+      }
+      if (mainVid) {
+        mainVid.playbackRate = 1.0;
+        if (isPlaying) {
+          mainVid.play().catch(() => {});
+        } else {
+          mainVid.pause();
+        }
+      }
     }
   }, [isPlaying, isAdPlaying, isImageAd]);
 
